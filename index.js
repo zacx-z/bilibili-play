@@ -1,13 +1,14 @@
-// TODO: 要先请求https://api.live.bilibili.com/room/v1/Room/room_init?id=URL中的ID获取房间ID。返回的是JSON数据，['data']['room_id']就是真正的房间ID
 const ROOM_ID = 921248 // NOTE: your roomid here
 
 const CONF_URL = "https://api.live.bilibili.com/room/v1/Danmu/getConf"
+const INIT_URL = "https://api.live.bilibili.com/room/v1/Room/room_init"
 const https = require("https")
+const querystring = require("querystring")
 const ws = require("nodejs-websocket")
 const zlib = require("zlib")
 const inputSim = require("./input-sim")
 
-var commandMap = require("./commandMap").getCommandMap()
+var commandMap = require("./command-map").getCommandMap()
 
 var HEADER_SIZE = 16;
 
@@ -74,12 +75,21 @@ function handleCommand (buffer) {
 
 var authToken;
 var hostServerList;
+var roomid;
 
 function handleConfiguration (conf) {
     authToken = conf.data.token;
     hostServerList = conf.data.host_server_list;
     console.log("token: " + authToken)
-    tryConnect()
+    https.get(INIT_URL + "?" + querystring.stringify({ id: ROOM_ID }), (response) => {
+        let data = '';
+        response.on('data', (chunk) => data += chunk);
+        response.on('end', () => {
+            var res = JSON.parse(data);
+            roomid = res.data.room_id;
+            tryConnect()
+        })
+    });
 }
 
 tryConnect = (() => {
@@ -88,7 +98,7 @@ tryConnect = (() => {
         var server = hostServerList[retryCount % hostServerList.length]
         retryCount += 1
         var uri = `wss://${server.host}:${server.wss_port}/sub`;
-        console.log(`trying to connect ${uri}`);
+        console.log(`trying to connect ${uri} with room id ${roomid}`);
         var conn = ws.connect("wss://tx-bj-live-comet-02.chat.bilibili.com:443/sub", function () {
             var intervalId = setInterval(function () {
                 sendPacket(2, {}); // heartbeat
@@ -97,7 +107,7 @@ tryConnect = (() => {
             // auth
             sendPacket(7, {
                 "uid": 0,
-                "roomid": ROOM_ID,
+                "roomid": roomid,
                 "protover": 2,
                 "platform": "web",
                 "clientver": "1.8.2",
