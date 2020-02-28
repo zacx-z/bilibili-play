@@ -15,8 +15,8 @@ const CMouseInput = StructType({
 })
 
 const CKeyboardInput = StructType({
-    wVk: ref.types.int32,
-    wScan: ref.types.int32,
+    wVk: ref.types.int16,
+    wScan: ref.types.int16,
     dwFlags: ref.types.uint32,
     time: ref.types.uint32,
     dwExtraInfo: ulongPtr
@@ -24,8 +24,14 @@ const CKeyboardInput = StructType({
 
 const CHardwareInput = StructType({
     uMsg: ref.types.uint32,
-    wParamL: ref.types.int32,
-    wParamH: ref.types.int32
+    wParamL: ref.types.int16,
+    wParamH: ref.types.int16
+})
+
+const _CInputUnion = UnionType({
+    mi: CMouseInput,
+    ki: CKeyboardInput,
+    hi: CHardwareInput
 })
 
 const CInput = StructType({
