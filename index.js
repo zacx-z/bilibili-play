@@ -1,28 +1,12 @@
+// TODO: 要先请求https://api.live.bilibili.com/room/v1/Room/room_init?id=URL中的ID获取房间ID。返回的是JSON数据，['data']['room_id']就是真正的房间ID
+
 const CONF_URL = "https://api.live.bilibili.com/room/v1/Danmu/getConf"
 const https = require("https")
 const ws = require("nodejs-websocket")
 const zlib = require("zlib")
 const inputSim = require("./input-sim")
 
-const actionMap = {
-    0x26: ["up", "u", "上", "前", "forward", "f", "shang", "qian"],
-    0x28: ["down", "d", "下", "后", "退", "back", "b", "xia", "hou", "tui"],
-    0x25: ["left", "l", "左", "zuo"],
-    0x27: ["right", "r", "右", "you"],
-    0x20: ["horn", "喇叭", "laba"],
-    //"lshift": ["brake", "刹车", "刹", "sha"]
-}
-
-var commandMap = {};
-
-for (var code in actionMap) {
-    var row = actionMap[code]
-    for (var cmd in row) {
-        commandMap[row[cmd]] = code;
-    }
-}
-
-console.log(commandMap)
+var commandMap = require("./commandMap").getCommandMap()
 
 var HEADER_SIZE = 16;
 
@@ -35,7 +19,7 @@ function handleBinaryStream (inStream) {
         }
     })
     inStream.on("end", function () {
-        console.log("Received " + data.length + "bytes of binary")
+        //console.log("Received " + data.length + "bytes of binary")
         handleData(data);
     })
 }
@@ -47,7 +31,6 @@ function handleData (buffer) {
         var protocolVer = buffer.readInt16BE(6);
         var op = buffer.readInt32BE(8);
         var seq = buffer.readInt32BE(12);
-        console.log(`Header Received: size: ${packSize}; header size: ${headerSize}; protover: ${protocolVer}; op: ${op}; seq: ${seq}`);
         var data = buffer.slice(headerSize, packSize);
         if (protocolVer == 2) {
             zlib.unzip(data, (err, buf) => {
@@ -78,10 +61,11 @@ function handleCommand (buffer) {
     switch (data.cmd) {
     case "DANMU_MSG":
         var text = data.info[1]
-        console.log(text + " from " + data.info[2][1])
+        console.log(data.info[2][1] + ':' + text)
         var cmd = text.toLowerCase();
         if (commandMap[cmd] != null) {
-            inputSim.SendKey(commandMap[cmd], 0.1)
+            var info = commandMap[cmd]
+            inputSim.SendKey(info.keyCode, info.duration)
         }
         break;
     }
@@ -106,7 +90,6 @@ tryConnect = (() => {
         console.log(`trying to connect ${uri}`);
         var conn = ws.connect("wss://tx-bj-live-comet-02.chat.bilibili.com:443/sub", function () {
             var intervalId = setInterval(function () {
-                console.log('heartbeat')
                 sendPacket(2, {}); // heartbeat
             }, 30 * 1000);
 
@@ -136,7 +119,6 @@ tryConnect = (() => {
 
         function sendPacket (op, data, callback = null) {
             var chunk = Buffer.from(JSON.stringify(data), 'utf-8');
-            console.log(chunk.length)
             var header = Buffer.alloc(HEADER_SIZE);
             header.writeInt32BE(chunk.length + HEADER_SIZE/*whole size*/);
             header.writeInt16BE(HEADER_SIZE/*header size*/, 4);
