@@ -1,4 +1,5 @@
 // TODO: 要先请求https://api.live.bilibili.com/room/v1/Room/room_init?id=URL中的ID获取房间ID。返回的是JSON数据，['data']['room_id']就是真正的房间ID
+const ROOM_ID = 921248 // NOTE: your roomid here
 
 const CONF_URL = "https://api.live.bilibili.com/room/v1/Danmu/getConf"
 const https = require("https")
@@ -96,7 +97,7 @@ tryConnect = (() => {
             // auth
             sendPacket(7, {
                 "uid": 0,
-                "roomid": 921248, // my live room
+                "roomid": ROOM_ID,
                 "protover": 2,
                 "platform": "web",
                 "clientver": "1.8.2",
