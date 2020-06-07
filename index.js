@@ -50,7 +50,7 @@ function handleData (buffer) {
     }
 }
 
-https.get(CONF_URL, (response) => {
+https.get(CONF_URL + "?" + querystring.stringify({ "room_id": ROOM_ID }), (response) => {
     let data = '';
     response.on('data', (chunk) => data += chunk);
     response.on('end', () => {
