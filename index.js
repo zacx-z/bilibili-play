@@ -1,11 +1,5 @@
 const ROOM_ID = 921248 // NOTE: your roomid here
 
-const CONF_URL = "https://api.live.bilibili.com/room/v1/Danmu/getConf"
-const INIT_URL = "https://api.live.bilibili.com/room/v1/Room/room_init"
-const https = require("https")
-const querystring = require("querystring")
-const ws = require("nodejs-websocket")
-const zlib = require("zlib")
 const inputSim = require("./input-sim")
 
 var commandMap = require("./command-map").getCommandMap()
